@@ -6,7 +6,7 @@
     dellemc.openmanage.idrac_virtual_media:
       idrac_ip: "{{item.ip}}"
       idrac_user: "{{idrac_username}}"
-      idrac_password: "{{idrac_password}}!"
+      idrac_password: "{{idrac_password}}"
       validate_certs: false
       virtual_media:
         - insert: true
@@ -20,7 +20,7 @@
     dellemc.openmanage.idrac_boot:
       idrac_ip: "{{ item }}"
       idrac_user: "{{idrac_username}}"
-      idrac_password: "{{idrac_password}}!"
+      idrac_password: "{{idrac_password}}"
       validate_certs: false
       boot_source_override_mode: uefi
       boot_source_override_target: cd
@@ -39,7 +39,7 @@
     dellemc.openmanage.idrac_virtual_media:
       idrac_ip: "{{ item }}"
       idrac_user: "{{idrac_username}}"
-      idrac_password: "{{idrac_password}}!"
+      idrac_password: "{{idrac_password}}"
       validate_certs: false
       virtual_media:
         - insert: false
