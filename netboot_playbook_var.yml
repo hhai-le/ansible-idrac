@@ -1,0 +1,49 @@
+---
+- hosts: ansible
+  connection: local
+  tasks:
+  - name: Insert image file to Remote File Share
+    dellemc.openmanage.idrac_virtual_media:
+      idrac_ip: "{{item.ip}}"
+      idrac_user: "{{idrac_username}}"
+      idrac_password: "{{idrac_password}}!"
+      validate_certs: false
+      virtual_media:
+        - insert: true
+          image:  "192.168.86.130:/iso/{{item.iso}}"
+    with_items:
+    - { ip: 172.16.143.12, iso: ubuntu-22.04.3-auto.iso }
+    - { ip: 172.16.143.13, iso: ubuntu-22.04.4-auto.iso }
+    - { ip: 172.16.143.14, iso: ubuntu-22.04.5-auto.iso }
+
+  - name: Configure next boot override
+    dellemc.openmanage.idrac_boot:
+      idrac_ip: "{{ item }}"
+      idrac_user: "{{idrac_username}}"
+      idrac_password: "{{idrac_password}}!"
+      validate_certs: false
+      boot_source_override_mode: uefi
+      boot_source_override_target: cd
+      boot_source_override_enabled: once
+      reset_type: "force_restart"
+    with_items:
+      - 172.16.143.12
+      - 172.16.143.13
+      - 172.16.143.14
+
+  - name: Sleep for 600 seconds and continue with play
+    wait_for:
+      timeout: 600
+
+  - name: Reject image file from Remote File Share
+    dellemc.openmanage.idrac_virtual_media:
+      idrac_ip: "{{ item }}"
+      idrac_user: "{{idrac_username}}"
+      idrac_password: "{{idrac_password}}!"
+      validate_certs: false
+      virtual_media:
+        - insert: false
+    with_items:
+    - 172.16.143.12
+    - 172.16.143.13
+    - 172.16.143.14

@@ -1,0 +1,13 @@
+---
+- hosts: ansible
+  connection: local
+  tasks:
+  - name: Configure iDrac OS Deployment
+    dellemc.openmanage.idrac_os_deployment:
+      idrac_ip: "172.16.143.14"
+      idrac_user: "{{idrac_username}}"
+      idrac_password: "{{idrac_password}}!"
+      validate_certs: false
+      share_name: "192.168.86.130:/iso"
+      iso_image: "esxi01.j.local.iso"
+      expose_duration: 180
