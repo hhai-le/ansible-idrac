@@ -10,7 +10,7 @@
       validate_certs: false
       virtual_media:
         - insert: true
-          image:  "192.168.86.130:/iso/{{item.iso}}"
+          image:  "{{nfs_server}}:/iso/{{item.iso}}"
     with_items:
     - { ip: 172.16.143.12, iso: ubuntu-22.04.3-auto.iso }
     - { ip: 172.16.143.13, iso: ubuntu-22.04.4-auto.iso }

@@ -2,3 +2,4 @@
 ---
 idrac_username: iloadmin
 idrac_password: ilopassword
+nfs_server: 192.168.86.130

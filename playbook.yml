@@ -7,6 +7,6 @@
         idrac_ip: "192.168.86.14"
         idrac_user: "{{idrac_username}}"
         idrac_password: "{{idrac_password}}!"
-        share_name: "192.168.86.130:/iso"
+        share_name: "{{nfs_server}}:/iso"
         iso_image: "ubuntu-22.04.3-live-server-amd64.iso"
         expose_duration: 180
