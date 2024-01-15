@@ -1,0 +1,127 @@
+---
+- hosts: ansible
+  connection: local
+  tasks:
+  - name: Get enclosure information.
+    ansible.builtin.uri:
+      url: "https://{{ hostname }}/redfish/v1/Chassis/Oem/Dell/DellEnclosures"
+      validate_certs: "{{ validate_certs }}"
+      ca_path: "{{ ca_path | default(omit) }}"
+      method: "{{ uri_method }}"
+      user: "{{ username }}"
+      password: "{{ password }}"
+      headers: "{{ uri_headers }}"
+      body_format: "{{ uri_body_format }}"
+      status_code: "{{ uri_status_code }}"
+      return_content: "{{ uri_return_content }}"
+    register: enclosure_result
+    delegate_to: "{{ lookup('ansible.builtin.env', 'RUNON', default='localhost') }}"
+
+  - name: Set enclosure facts
+    ansible.builtin.set_fact:
+      cacheable: yes
+      enclosure: "{{ enclosure_result.json.Members | ansible.utils.remove_keys(target=['@odata.context', '@odata.id', '@odata.type', 'Links', 'Description']) }}"
+
+  - name: Get Storage information.
+    ansible.builtin.uri:
+      url: "https://{{ hostname }}{{ api_system }}/Storage"
+      validate_certs: "{{ validate_certs }}"
+      ca_path: "{{ ca_path | default(omit) }}"
+      method: "{{ uri_method }}"
+      user: "{{ username }}"
+      password: "{{ password }}"
+      headers: "{{ uri_headers }}"
+      body_format: "{{ uri_body_format }}"
+      status_code: "{{ uri_status_code }}"
+      return_content: "{{ uri_return_content }}"
+    register: virtual_disk_result
+    delegate_to: "{{ lookup('ansible.builtin.env', 'RUNON', default='localhost') }}"
+
+
+  - name: Get all storage controller ids.
+    ansible.builtin.set_fact:
+      cacheable: yes
+      storage_ids_list: "{{ virtual_disk_result.json.Members | map('dict2items') | flatten | map(attribute='value') | default('') }}"
+
+
+  - name: Get Virtual Disk information.
+    ansible.builtin.uri:
+      url: "https://{{ hostname }}{{ item }}/Volumes?$expand=*($levels=1)"
+      validate_certs: "{{ validate_certs }}"
+      ca_path: "{{ ca_path | default(omit) }}"
+      method: "{{ uri_method }}"
+      user: "{{ username }}"
+      password: "{{ password }}"
+      headers: "{{ uri_headers }}"
+      body_format: "{{ uri_body_format }}"
+      status_code: "{{ uri_status_code }}"
+      return_content: "{{ uri_return_content }}"
+    loop: "{{ storage_ids_list }}"
+    register: virtual_disk_result2
+    delegate_to: "{{ lookup('ansible.builtin.env', 'RUNON', default='localhost') }}"
+
+
+  - name: Set Virtual Disk facts
+    ansible.builtin.set_fact:
+      cacheable: yes
+      virtual_disk:
+        "{{ virtual_disk_result2.results | selectattr('json', 'defined') | map(attribute='json') | selectattr('Members', 'defined') |
+        map(attribute='Members') | flatten | ansible.utils.remove_keys(target=['@odata.context', '@odata.type',
+        '@odata.id', 'Actions', 'EncryptionTypes@odata.count', 'Identifiers@odata.count', 'Links',
+        'Operations@odata.count', 'DellVirtualDisk', 'DellVirtualDisk@Redfish.Deprecated']) }}"
+
+  - name: Get Storage information.
+    ansible.builtin.uri:
+      url: "https://{{ hostname }}{{ api_system }}/Storage"
+      validate_certs: "{{ validate_certs }}"
+      ca_path: "{{ ca_path | default(omit) }}"
+      method: "{{ uri_method }}"
+      user: "{{ username }}"
+      password: "{{ password }}"
+      headers: "{{ uri_headers }}"
+      body_format: "{{ uri_body_format }}"
+      status_code: "{{ uri_status_code }}"
+      return_content: "{{ uri_return_content }}"
+    register: disk_result
+    delegate_to: "{{ lookup('ansible.builtin.env', 'RUNON', default='localhost') }}"
+
+
+  - name: Get all storage controller ids.
+    ansible.builtin.set_fact:
+      cacheable: yes
+      storage_ids_list: "{{ disk_result.json.Members | map('dict2items') | flatten | map(attribute='value') }}"
+
+
+  - name: Get PhysicalDisk information.
+    ansible.builtin.uri:
+      url: "https://{{ hostname }}{{ item }}?$expand=*($levels=1)"
+      validate_certs: "{{ validate_certs }}"
+      ca_path: "{{ ca_path | default(omit) }}"
+      method: "{{ uri_method }}"
+      user: "{{ username }}"
+      password: "{{ password }}"
+      headers: "{{ uri_headers }}"
+      body_format: "{{ uri_body_format }}"
+      status_code: "{{ uri_status_code }}"
+      return_content: "{{ uri_return_content }}"
+    loop: "{{ storage_ids_list }}"
+    register: disk_result2
+    delegate_to: "{{ lookup('ansible.builtin.env', 'RUNON', default='localhost') }}"
+
+
+  - name: Set Physical Disk facts
+    ansible.builtin.set_fact:
+      cacheable: yes
+      physical_disk:
+        "{{ disk_result2.results | selectattr('json', 'defined') | map(attribute='json') | selectattr('Drives', 'defined') |
+        map(attribute='Drives') | flatten | ansible.utils.remove_keys(target=['@odata.context', '@odata.id', '@odata.type',
+        'Actions', 'Assembly', 'Links', 'DellDriveSMARTAttributes', 'DellNVMeSMARTAttributes', 'Operations@odata.count']) }}"
+
+  - debug:
+      var: ansible_facts.physical_disk
+
+  - debug:
+      var: ansible_facts.virtual_disk
+
+  - debug:
+      var: ansible_facts.enclosure.0.Id
